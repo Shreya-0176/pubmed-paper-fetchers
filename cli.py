@@ -1,8 +1,6 @@
 import argparse  # Import the argparse module to handle command-line arguments
 from fetch_papers import fetch_pubmed_papers, fetch_paper_details  # Correct import statement
 import logging
-logging.basicConfig(level=logging.DEBUG)  # Enable debug logging
-
 
 def main():
     # Create the argument parser
@@ -15,6 +13,16 @@ def main():
     
     # Parse the command-line arguments
     args = parser.parse_args()
+
+    # Configure logging level based on the debug flag
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+        logging.debug("Debug mode enabled")
+    else:
+        logging.basicConfig(level=logging.INFO)
+
+    # Log the query being fetched
+    logging.info(f"Fetching papers for query: {args.query}")
 
     # Fetch the papers based on the query (this function is in fetch_papers.py)
     paper_ids = fetch_pubmed_papers(args.query)  # Fetch paper IDs based on the query
@@ -40,9 +48,6 @@ def save_papers_to_csv(papers, filename):
         writer.writeheader()  # Write the header (column names)
         writer.writerows(papers)  # Write the data rows
     print(f"Results saved to {filename}")
-# Later in the code, print debug information
-logging.debug("This is a debug message.")
-
 
 # Entry point of the script
 if __name__ == '__main__':

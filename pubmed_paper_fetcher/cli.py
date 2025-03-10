@@ -1,5 +1,6 @@
 import argparse  # Import the argparse module to handle command-line arguments
-from fetch_papers import fetch_pubmed_papers, fetch_paper_details  # Correct import statement
+from pubmed_paper_fetcher.fetch_papers import fetch_pubmed_papers, fetch_paper_details
+
 import logging
 
 def main():

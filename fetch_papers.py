@@ -2,8 +2,14 @@ import requests
 import argparse
 import csv
 from typing import List, Dict
+import requests
+from typing import List, Dict
+
+
+
 
 # PubMed API base URLs
+SUMMARY_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"  
 SEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 SUMMARY_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
 
@@ -20,6 +26,7 @@ def fetch_pubmed_papers(query: str, max_results: int = 10) -> List[str]:
     data = response.json()
     return data.get("esearchresult", {}).get("idlist", [])
 
+
 def fetch_paper_details(paper_ids: List[str]) -> List[Dict[str, str]]:
     """Fetch detailed information for given paper IDs."""
     params = {
@@ -27,8 +34,17 @@ def fetch_paper_details(paper_ids: List[str]) -> List[Dict[str, str]]:
         "id": ",".join(paper_ids),
         "retmode": "json"
     }
-    response = requests.get(SUMMARY_URL, params=params)
-    response.raise_for_status()
+
+    try:
+        response = requests.get(SUMMARY_URL, params=params, timeout=30)  # 30 seconds timeout
+        response.raise_for_status()
+    except requests.exceptions.Timeout:
+        print("Request timed out. Please try again later.")
+        return []  # Return empty list in case of timeout
+    except requests.exceptions.RequestException as e:
+        print(f"An error occurred: {e}")
+        return []  # Return empty list in case of any other exception
+
     data = response.json()
 
     papers = []

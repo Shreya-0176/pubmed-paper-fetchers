@@ -1,15 +1,8 @@
 import requests
-import argparse
 import csv
 from typing import List, Dict
-import requests
-from typing import List, Dict
-
-
-
 
 # PubMed API base URLs
-SUMMARY_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"  
 SEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 SUMMARY_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
 
@@ -26,26 +19,23 @@ def fetch_pubmed_papers(query: str, max_results: int = 10) -> List[str]:
     data = response.json()
     return data.get("esearchresult", {}).get("idlist", [])
 
-
 def fetch_paper_details(paper_ids: List[str]) -> List[Dict[str, str]]:
     """Fetch detailed information for given paper IDs."""
+    if not paper_ids:
+        return []
+
     params = {
         "db": "pubmed",
         "id": ",".join(paper_ids),
         "retmode": "json"
     }
-
     try:
-        response = requests.get(SUMMARY_URL, params=params, timeout=30)  # 30 seconds timeout
+        response = requests.get(SUMMARY_URL, params=params, timeout=30)
         response.raise_for_status()
-    except requests.exceptions.Timeout:
-        print("Request timed out. Please try again later.")
-        return []  # Return empty list in case of timeout
-    except requests.exceptions.RequestException as e:
-        print(f"An error occurred: {e}")
-        return []  # Return empty list in case of any other exception
-
-    data = response.json()
+        data = response.json()
+    except requests.RequestException as e:
+        print(f"Error fetching details: {e}")
+        return []
 
     papers = []
     for paper_id in paper_ids:
@@ -55,12 +45,18 @@ def fetch_paper_details(paper_ids: List[str]) -> List[Dict[str, str]]:
         authors = [author.get("name", "N/A") for author in doc.get("authors", [])]
         affiliations = [author.get("affiliation", "N/A") for author in doc.get("authors", [])]
 
-        # Heuristics to find non-academic authors and company affiliations
-        non_academic_authors = [auth for auth, aff in zip(authors, affiliations) if "university" not in aff.lower() and "lab" not in aff.lower()]
-        company_affiliations = [aff for aff in affiliations if "pharma" in aff.lower() or "biotech" in aff.lower()]
-
-        # Simulating corresponding author email as the first non-academic author (if any)
-        corresponding_email = f"{non_academic_authors[0].replace(' ', '.').lower()}@company.com" if non_academic_authors else "N/A"
+        non_academic_authors = [
+            author for author, aff in zip(authors, affiliations)
+            if "university" not in aff.lower() and "lab" not in aff.lower()
+        ]
+        company_affiliations = [
+            aff for aff in affiliations
+            if "pharma" in aff.lower() or "biotech" in aff.lower()
+        ]
+        corresponding_email = (
+            f"{non_academic_authors[0].replace(' ', '.').lower()}@company.com"
+            if non_academic_authors else "N/A"
+        )
 
         papers.append({
             "PubmedID": paper_id,
@@ -72,39 +68,15 @@ def fetch_paper_details(paper_ids: List[str]) -> List[Dict[str, str]]:
         })
     return papers
 
-def save_to_csv(papers: List[Dict[str, str]], filename: str) -> None:
+def save_papers_to_csv(papers: List[Dict[str, str]], filename: str) -> None:
     """Save paper details to a CSV file."""
-    with open(filename, mode="w", newline="", encoding="utf-8") as file:
-        writer = csv.DictWriter(file, fieldnames=papers[0].keys())
-        writer.writeheader()
-        writer.writerows(papers)
-
-def main():
-    parser = argparse.ArgumentParser(description="Fetch research papers from PubMed.")
-    parser.add_argument("query", type=str, help="Search query for PubMed.")
-    parser.add_argument("-f", "--file", type=str, help="Output CSV filename")
-    parser.add_argument("-d", "--debug", action="store_true", help="Enable debug information")
-    args = parser.parse_args()
-
-    if args.debug:
-        print(f"Query: {args.query}")
-        print(f"Output file: {args.file}")
-
-    paper_ids = fetch_pubmed_papers(args.query)
-    if not paper_ids:
-        print("No papers found.")
+    if not papers:
+        print("No papers to save.")
         return
 
-    papers = fetch_paper_details(paper_ids)
-
-    # Print paper details to console
-    for paper in papers:
-        print(paper)
-
-    # Save to CSV if file name is provided
-    if args.file:
-        save_to_csv(papers, args.file)
-        print(f"Results saved to {args.file}")
-
-if __name__ == "__main__":
-    main()
+    keys = papers[0].keys()
+    with open(filename, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.DictWriter(file, fieldnames=keys)
+        writer.writeheader()
+        writer.writerows(papers)
+    print(f"Papers saved to {filename}")

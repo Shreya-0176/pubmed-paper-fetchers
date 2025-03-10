@@ -1,10 +1,10 @@
-echo __pycache__/ > .gitignore
-echo *.pyc >> .gitignore
-echo .venv/ >> .gitignore
-echo .DS_Store >> .gitignore
-echo .mypy_cache/ >> .gitignore
-echo .pytest_cache/ >> .gitignore
-echo poetry.lock >> .gitignore
-echo dist/ >> .gitignore
-echo *.egg-info/ >> .gitignore
-echo *.log >> .gitignore
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+.mypy_cache/
+.pytest_cache/
+poetry.lock
+dist/
+*.egg-info/
+*.log
